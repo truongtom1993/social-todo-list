@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -11,7 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 type TodoItem struct {
@@ -53,26 +51,14 @@ func (TodoItemCreation) TableName() string { return TodoItem{}.TableName() }
 func (TodoItemUpdate) TableName() string   { return TodoItem{}.TableName() }
 
 func main() {
-	newLogger := logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
-		logger.Config{
-			SlowThreshold:             time.Second,  // Slow SQL threshold
-			LogLevel:                  logger.Error, // Log level
-			IgnoreRecordNotFoundError: true,         // Ignore ErrRecordNotFound error for logger
-			ParameterizedQueries:      true,         // Don't include params in the SQL log
-			Colorful:                  true,
-		},
-	)
 	dsn := os.Getenv("DB_CONN_STR")
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: newLogger,
-	})
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 
 	if err != nil {
 		panic("Khong ket noi duoc voi DB")
 	}
 
-	r := gin.Default()
+	ginEngine := gin.Default()
 	//CURD
 	//POST : /v1/items/ (create new item)
 	//GET: /v1/items/ (get list all items) /v1/items?page=1&limit=10
@@ -80,7 +66,7 @@ func main() {
 	//(PUT | PATCH): /v1/items/:id
 	//DELETE: /v1/items/:id
 
-	v1 := r.Group("/v1/")
+	v1 := ginEngine.Group("/v1/")
 	{
 		items := v1.Group("items/")
 		{
@@ -92,7 +78,7 @@ func main() {
 		}
 	}
 
-	if err := r.Run(":3131"); err != nil {
+	if err := ginEngine.Run(":3131"); err != nil {
 		panic("khong start duoc server")
 	}
 }
